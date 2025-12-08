@@ -17,22 +17,44 @@ import { setUserDetails } from "../store/userSlice";
 import { toast } from "react-toastify";
 import { FaUserLarge } from "react-icons/fa6";
 
-const menuItems = [
-  { name: "Dashboard", path: "/home", icon: <LayoutDashboard size={20} /> },
-  { name: "Wallets", path: "/wallets", icon: <Wallet size={20} /> },
-  {
-    name: "Expense & Income",
-    path: "/transactions",
-    icon: <ArrowLeftRight size={20} />,
-  },
-  { name: "Reports", path: "/reports", icon: <BarChart3 size={20} /> },
-];
-
 const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(true);
   const dispatch = useDispatch();
   const user = useSelector((state) => state.user?.user);
 
+  // -----------------------------
+  // ROLE-BASED MENU ITEMS
+  // -----------------------------
+
+  const teacherMenu = [
+    { name: "Dashboard", path: "/teacher-dashboard", icon: <LayoutDashboard size={20} /> },
+    { name: "My Courses", path: "/teacher/my-courses", icon: <BarChart3 size={20} /> },
+    { name: "Create Quiz", path: "/teacher/create-quiz", icon: <BarChart3 size={20} /> },
+    { name: "Create Assignment", path: "/teacher/create-assignment", icon: <BarChart3 size={20} /> },
+    { name: "Assignment Submissions", path: "/teacher/submissions", icon: <BarChart3 size={20} /> },
+  ];
+
+  const studentMenu = [
+    { name: "Dashboard", path: "/student-dashboard", icon: <LayoutDashboard size={20} /> },
+    { name: "My Courses", path: "/student/my-courses", icon: <Wallet size={20} /> },
+    { name: "All Courses", path: "/student/all-courses", icon: <Wallet size={20} /> },
+    { name: "Quiz Results", path: "/student/quiz-results", icon: <BarChart3 size={20} /> },
+    { name: "Assignments", path: "/student/assignments", icon: <BarChart3 size={20} /> },
+    { name: "Assignment Review", path: "/student/assignment-review", icon: <BarChart3 size={20} /> },
+    
+    { name: "Explore Universities", path: "/student/explore-universities", icon: <ArrowLeftRight size={20} /> },
+  ];
+
+
+  let menuItems = [];
+
+  if (user?.role === "TEACHER") menuItems = teacherMenu;
+  if (user?.role === "STUDENT") menuItems = studentMenu;
+ 
+
+  // -----------------------------
+  // LOGOUT HANDLER
+  // -----------------------------
   const handelLogout = async () => {
     try {
       const fetchData = await fetch(SummaryApi.logout_user.url, {
@@ -71,7 +93,7 @@ const Sidebar = () => {
         </button>
       </div>
 
-      {/* Menu Items */}
+      {/* Sidebar Menu */}
       <nav className="flex-1 flex flex-col gap-1 px-3 py-4">
         {menuItems.map((item, index) => (
           <NavLink
@@ -88,6 +110,7 @@ const Sidebar = () => {
             <div className={`${isOpen ? "" : "flex justify-center w-full"}`}>
               {item.icon}
             </div>
+
             {isOpen && (
               <div className="flex items-center justify-between flex-1">
                 <span className="font-medium">{item.name}</span>
@@ -97,6 +120,7 @@ const Sidebar = () => {
                 />
               </div>
             )}
+
             {!isOpen && (
               <span className="absolute left-14 z-50 hidden group-hover:flex whitespace-nowrap bg-gray-800 text-white text-xs px-2 py-1 rounded-md shadow-lg">
                 {item.name}
@@ -109,7 +133,6 @@ const Sidebar = () => {
       {/* Bottom Profile + Logout Section */}
       {user && (
         <div className="mt-auto border-t border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100">
-          {/* User Profile Section with Sign Out */}
           <div className="p-4 flex items-center justify-between gap-3 relative group">
             {/* Profile Image */}
             <div className="relative flex items-center gap-2">
@@ -124,13 +147,14 @@ const Sidebar = () => {
                   <FaUserLarge className="w-4 h-4 text-white" />
                 </div>
               )}
+
               {/* Online indicator */}
               <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow-sm">
                 <div className="w-full h-full bg-green-400 rounded-full animate-pulse"></div>
               </div>
             </div>
 
-            {/* Sign Out Button */}
+            {/* Logout Button */}
             {isOpen && (
               <button
                 onClick={handelLogout}

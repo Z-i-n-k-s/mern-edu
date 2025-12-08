@@ -26,12 +26,24 @@ const Login = () => {
       headers: { "content-type": "application/json" },
       body: JSON.stringify(data)
     });
+
     const dataApi = await dataResponse.json();
 
     if (dataApi.success) {
       toast.success(dataApi.message);
-      navigate('/');
-      fetchUserDetails();
+
+      // Fetches full user (including role)
+      const user = await fetchUserDetails();
+      console.log(dataApi)
+
+      // Navigate based on role
+      if (user?.role === "TEACHER") {
+        navigate("/teacher-dashboard");
+      } else if (user?.role === "STUDENT") {
+        navigate("/student-dashboard");
+      } else {
+        navigate("/"); // fallback
+      }
     }
 
     if (dataApi.error) {
@@ -42,21 +54,16 @@ const Login = () => {
   return (
     <section id="login" className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-amber-50/30 to-orange-50/30 px-4">
       <div className="bg-white/90 backdrop-blur-md shadow-xl rounded-2xl p-8 w-full max-w-md">
-        
-        {/* Logo/Icon */}
+
         <div className="w-20 h-20 mx-auto mb-4">
           <img src={loginIcons} alt="login icons" className="w-full h-full object-contain" />
         </div>
 
-        {/* Heading */}
         <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
           Welcome Back
         </h2>
 
-        {/* Form */}
         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-          
-          {/* Email */}
           <div>
             <label className="block mb-1 font-medium text-gray-700">Email</label>
             <input
@@ -69,7 +76,6 @@ const Login = () => {
             />
           </div>
 
-          {/* Password */}
           <div>
             <label className="block mb-1 font-medium text-gray-700">Password</label>
             <div className="flex items-center bg-gray-100 rounded-xl pr-3 focus-within:ring-2 focus-within:ring-amber-400">
@@ -88,12 +94,12 @@ const Login = () => {
                 {showPassword ? <FaEyeSlash /> : <FaEye />}
               </div>
             </div>
+
             <Link to="/forgot-password" className="text-sm text-amber-600 hover:underline mt-1 block text-right">
               Forgot password?
             </Link>
           </div>
 
-          {/* Button */}
           <button
             type="submit"
             className="bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 rounded-full transition-transform transform hover:scale-105 shadow-md"
@@ -102,7 +108,6 @@ const Login = () => {
           </button>
         </form>
 
-        {/* Sign up link */}
         <p className="text-center text-gray-600 mt-6">
           Don't have an account?{" "}
           <Link to="/sign-up" className="text-amber-600 hover:underline font-medium">
