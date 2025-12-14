@@ -15,9 +15,27 @@ const updateProfile = require('../controller/User/updateProfile');
 const userForgotPass = require('../controller/User/userForgotPass');
 const userResetPass = require('../controller/User/userResetPass');
 const verifyResetToken = require('../controller/User/verifyResetToken');
-const { createCourse, getAllCourses, getCourseByName, enrollInCourse, getStudentCourses } = require('../controller/course/courseController');
+
+// Course controllers
+const {
+  createCourse,
+  getAllCourses,
+  getCourseByName,
+  enrollInCourse,
+  getStudentCourses
+} = require('../controller/course/courseController');
+
+// 🔴 Live Class controllers
+
+const studentAllLiveClasses = require('../controller/liveclass/studentAllLiveClasses');
+const teacherLiveClassHistory = require('../controller/liveclass/teacherLiveClassHistory');
+const cancelLiveClass = require('../controller/liveclass/cancelLiveClass');
+const updateLiveClass = require('../controller/liveclass/updateLiveClass');
+const createLiveClass = require('../controller/liveclass/createLiveClass');
 
 
+const assignmentController = require("../controller/assignment/assignmentController");
+const quizController = require("../controller/quiz/quizController");
 
 
 // ---------------- USER ROUTES ----------------
@@ -27,45 +45,91 @@ router.post("/signin", userSignInController);
 router.get("/user-details", authToken, userDetailsController);
 router.get("/userLogout", userLogout);
 
-// Forgot/reset password
 router.post("/forgot-password", userForgotPass);
 router.post("/reset-password", userResetPass);
 router.get("/verify-reset-token/:token", verifyResetToken);
 
-// Admin panel
 router.get("/all-user", authToken, allUsers);
 router.post("/user-search", userSearchController);
 router.post("/update-user", authToken, updateUser);
 router.post("/update-profile", authToken, updateProfile);
 router.post("/delete-user", authToken, userDeleteController);
 
+
 // ---------------- COURSE ROUTES ----------------
 
-// Create course for a specific teacher
 router.post("/course/create/:teacherId", authToken, createCourse);
-
-// Get all courses
 router.get("/courses", getAllCourses);
-
-// Get course by name
 router.get("/course/name/:courseName", getCourseByName);
 
 
 // ---------------- ENROLLMENT ROUTES ----------------
 
-// Student enrolls in a course (string IDs only)
 router.post(
-  "/course/enroll/:courseId", 
-  authToken, 
+  "/course/enroll/:courseId",
+  authToken,
   enrollInCourse
 );
 
-// Get all courses a student is enrolled in
 router.get(
   "/courses/student/:studentId",
   authToken,
   getStudentCourses
 );
 
+
+// ---------------- LIVE CLASS ROUTES ----------------
+
+// Teacher creates a live class
+router.post(
+  "/live-class/create",
+  authToken,
+  createLiveClass
+);
+
+// Teacher updates live class (date/time/title)
+router.put(
+  "/live-class/update/:liveClassId",
+  authToken,
+  updateLiveClass
+);
+
+// Teacher cancels a live class
+router.put(
+  "/live-class/cancel/:liveClassId",
+  authToken,
+  cancelLiveClass
+);
+
+// Teacher views his live class history
+router.get(
+  "/live-class/teacher/history",
+  authToken,
+  teacherLiveClassHistory
+);
+
+// Student views ALL available live classes
+router.get(
+  "/live-class/student/all",
+  authToken,
+  studentAllLiveClasses
+);
+
+// Assignment routes
+router.post("/assignments", assignmentController.createAssignment);
+router.get("/assignments", assignmentController.getAssignmentsByCourse);
+router.get("/assignments-questions", assignmentController.getAssignmentsByTeacher);
+router.post("/assignment-answers", assignmentController.submitAssignmentAnswer);
+router.get("/assignment-answers", assignmentController.getAssignmentAnswersByStudent);
+router.get("/assignment-answers-questions", assignmentController.getAssignmentAnswersByQuestion);
+router.post("/assignment-feedback", assignmentController.submitAssignmentFeedback);
+router.get("/assignment-feedback", assignmentController.getAssignmentFeedbackByTeacher);
+router.get("/assignment-feedback/by-answer", assignmentController.getAssignmentFeedbackByAnswer);
+
+// Quiz routes
+router.post("/teacher/:teacherId/courses/:courseId/quizzes", quizController.createQuiz);
+router.get("/course/:courseId/quizzes", quizController.getQuizzesByCourse);
+router.post("/quizAttempt", quizController.saveQuizAttempt);
+router.get("/student/:studentId/quizAttempts", quizController.getQuizAttemptsByStudent);
 
 module.exports = router;

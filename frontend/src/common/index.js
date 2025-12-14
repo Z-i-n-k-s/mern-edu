@@ -16,26 +16,48 @@ const SummaryApi = {
   deleteUser: { url: `${backendDomain}/api/delete-user`, method: "post" },
 
   // ------------------- COURSE APIS -------------------
-  createCourse: (teacherId) => ({
-    url: `${backendDomain}/api/course/create/${teacherId}`,
-    method: "post",
-  }),
+  createCourse: (teacherId) => ({ url: `${backendDomain}/api/course/create/${teacherId}`, method: "post" }),
   getAllCourses: { url: `${backendDomain}/api/courses`, method: "get" },
-  getCourseByName: (courseName) => ({
-    url: `${backendDomain}/api/course/name/${courseName}`,
-    method: "get",
-  }),
-
+  getCourseByName: (courseName) => ({ url: `${backendDomain}/api/course/name/${courseName}`, method: "get" }),
+  
   // ------------------- STUDENT COURSE APIS -------------------
   studentAllCourses: { url: `${backendDomain}/api/student/courses`, method: "get" },
+  enrollInCourse: (courseId) => ({ url: `${backendDomain}/api/course/enroll/${courseId}`, method: "post" }),
+  getStudentCourses: (studentId) => ({ url: `${backendDomain}/api/courses/student/${studentId}`, method: "get" }),
 
-  enrollInCourse: (courseId) => ({
-    url: `${backendDomain}/api/course/enroll/${courseId}`,
+  // ------------------- LIVE CLASS APIS -------------------
+  createLiveClass: { url: `${backendDomain}/api/live-class/create`, method: "post" },
+  updateLiveClass: (liveClassId) => ({ url: `${backendDomain}/api/live-class/update/${liveClassId}`, method: "put" }),
+  cancelLiveClass: (liveClassId) => ({ url: `${backendDomain}/api/live-class/cancel/${liveClassId}`, method: "put" }),
+  teacherLiveClassHistory: { url: `${backendDomain}/api/live-class/teacher/history`, method: "get" },
+  studentAllLiveClasses: { url: `${backendDomain}/api/live-class/student/all`, method: "get" },
+
+  // ------------------- ASSIGNMENT APIS -------------------
+  createAssignment: { url: `${backendDomain}/api/assignments`, method: "post" },
+  getAssignmentsByCourse: { url: `${backendDomain}/api/assignments`, method: "get" },
+  getAssignmentsByTeacher: { url: `${backendDomain}/api/assignments-questions`, method: "get" },
+  submitAssignmentAnswer: { url: `${backendDomain}/api/assignment-answers`, method: "post" },
+  getAssignmentAnswersByStudent: { url: `${backendDomain}/api/assignment-answers`, method: "get" },
+  getAssignmentAnswersByQuestion: { url: `${backendDomain}/api/assignment-answers-questions`, method: "get" },
+  submitAssignmentFeedback: { url: `${backendDomain}/api/assignment-feedback`, method: "post" },
+  getAssignmentFeedbackByTeacher: { url: `${backendDomain}/api/assignment-feedback`, method: "get" },
+  getAssignmentFeedbackByAnswer: { url: `${backendDomain}/api/assignment-feedback/by-answer`, method: "get" },
+
+  // ------------------- QUIZ APIS -------------------
+  createQuiz: (teacherId, courseId) => ({
+    url: `${backendDomain}/api/teacher/${teacherId}/courses/${courseId}/quizzes`,
     method: "post",
   }),
-
-  getStudentCourses: (studentId) => ({
-    url: `${backendDomain}/api/courses/student/${studentId}`,
+  getQuizzesByCourse: (courseId) => ({
+    url: `${backendDomain}/api/course/${courseId}/quizzes`,
+    method: "get",
+  }),
+  saveQuizAttempt: {
+    url: `${backendDomain}/api/quizAttempt`,
+    method: "post",
+  },
+  getQuizAttemptsByStudent: (studentId) => ({
+    url: `${backendDomain}/api/student/${studentId}/quizAttempts`,
     method: "get",
   }),
 };

@@ -29,6 +29,7 @@ const Sidebar = () => {
   const teacherMenu = [
     { name: "Dashboard", path: "/teacher-dashboard", icon: <LayoutDashboard size={20} /> },
     { name: "My Courses", path: "/teacher/my-courses", icon: <BarChart3 size={20} /> },
+    { name: "Live Classes", path: "/teacher/live-classes", icon: <BarChart3 size={20} /> },
     { name: "Create Quiz", path: "/teacher/create-quiz", icon: <BarChart3 size={20} /> },
     { name: "Create Assignment", path: "/teacher/create-assignment", icon: <BarChart3 size={20} /> },
     { name: "Assignment Submissions", path: "/teacher/submissions", icon: <BarChart3 size={20} /> },
@@ -37,10 +38,12 @@ const Sidebar = () => {
   const studentMenu = [
     { name: "Dashboard", path: "/student-dashboard", icon: <LayoutDashboard size={20} /> },
     { name: "My Courses", path: "/student/my-courses", icon: <Wallet size={20} /> },
+    { name: "Live Classes", path: "/student/live-class", icon: <Wallet size={20} /> },
     { name: "All Courses", path: "/student/all-courses", icon: <Wallet size={20} /> },
+    { name: "Quizs", path: "/student/all-quiz", icon: <BarChart3 size={20} /> },
     { name: "Quiz Results", path: "/student/quiz-results", icon: <BarChart3 size={20} /> },
     { name: "Assignments", path: "/student/assignments", icon: <BarChart3 size={20} /> },
-    { name: "Assignment Review", path: "/student/assignment-review", icon: <BarChart3 size={20} /> },
+    { name: "Assignment Review", path: "/student/assignments-feedback", icon: <BarChart3 size={20} /> },
     
     { name: "Explore Universities", path: "/student/explore-universities", icon: <ArrowLeftRight size={20} /> },
   ];

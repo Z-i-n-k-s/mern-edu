@@ -16,6 +16,15 @@ import ROLE from "../common/role";
 import TeacherCreateCourse from "../pages/TeacherCreateCourse";
 import StudentAllCourses from "../pages/StudentAllCourses";
 import StudentEnrolledCourses from "../pages/StudentEnrolledCourses";
+import TeacherCreateLiveClass from "../pages/TeacherCreateLiveClass";
+import StudentLiveClass from "../pages/StudentLiveClass";
+import TeacherPostAssignment from "../pages/TeacherPostAssignment";
+import StudentAssignment from "../pages/StudentAssignment";
+import TeacherAssignmentFeedback from "../pages/TeacherAssignmentFeedbacke";
+import StudentAssignmentFeedback from "../pages/StudentAssignmentFeedback";
+import TeacherCreateQuiz from "../pages/TeacherCreateQuiz";
+import StudentTakeQuiz from "../pages/StudentTakeQuiz";
+import TakeQuiz from "../components/TakeQuiz";
 
 // Redirect root
 const RootRedirect = () => {
@@ -74,6 +83,46 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+      {
+        path: "/student/live-class",
+        element: (
+          <ProtectedRoute role={ROLE.STUDENT}>
+            <StudentLiveClass />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/student/assignments",
+        element: (
+          <ProtectedRoute role={ROLE.STUDENT}>
+            <StudentAssignment />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/student/assignments-feedback",
+        element: (
+          <ProtectedRoute role={ROLE.STUDENT}>
+            <StudentAssignmentFeedback />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/student/all-quiz",
+        element: (
+          <ProtectedRoute role={ROLE.STUDENT}>
+            <StudentTakeQuiz />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/student/take-quiz",
+        element: (
+          <ProtectedRoute role={ROLE.STUDENT}>
+            <TakeQuiz />
+          </ProtectedRoute>
+        ),
+      },
 
       // TEACHER ROUTE
       {
@@ -89,6 +138,38 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute role={ROLE.TEACHER}>
             <TeacherCreateCourse />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/teacher/live-classes",
+        element: (
+          <ProtectedRoute role={ROLE.TEACHER}>
+            <TeacherCreateLiveClass />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/teacher/create-assignment",
+        element: (
+          <ProtectedRoute role={ROLE.TEACHER}>
+            <TeacherPostAssignment />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/teacher/create-quiz",
+        element: (
+          <ProtectedRoute role={ROLE.TEACHER}>
+            <TeacherCreateQuiz />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/teacher/submissions",
+        element: (
+          <ProtectedRoute role={ROLE.TEACHER}>
+            <TeacherAssignmentFeedback />
           </ProtectedRoute>
         ),
       },
