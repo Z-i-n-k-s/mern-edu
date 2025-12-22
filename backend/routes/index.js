@@ -36,6 +36,8 @@ const createLiveClass = require('../controller/liveclass/createLiveClass');
 
 const assignmentController = require("../controller/assignment/assignmentController");
 const quizController = require("../controller/quiz/quizController");
+const { deleteReview, updateReview, getAllReviews, createReview } = require('../controller/review/reviewController');
+const { deleteRecordedClass, updateRecordedClass, getRecordedClassById, getRecordedClasses, createRecordedClass } = require('../controller/recordedClasses/recordedClassesController');
 
 
 // ---------------- USER ROUTES ----------------
@@ -131,5 +133,71 @@ router.post("/teacher/:teacherId/courses/:courseId/quizzes", quizController.crea
 router.get("/course/:courseId/quizzes", quizController.getQuizzesByCourse);
 router.post("/quizAttempt", quizController.saveQuizAttempt);
 router.get("/student/:studentId/quizAttempts", quizController.getQuizAttemptsByStudent);
+
+// ---------------- REVIEW ROUTES ----------------
+
+// Create a review (student)
+router.post(
+  "/reviews",
+  authToken,
+  createReview
+);
+
+// Get all reviews
+router.get(
+  "/reviews",
+  getAllReviews
+);
+
+// Update a review
+router.put(
+  "/reviews/:id",
+  authToken,
+  updateReview
+);
+
+// Delete a review
+router.delete(
+  "/reviews/:id",
+  authToken,
+  deleteReview
+);
+// ---------------- RECORDED CLASS ROUTES ----------------
+
+// Teacher creates a recorded class
+router.post(
+  "/recorded-class",
+  authToken,
+  createRecordedClass
+);
+
+// Get all recorded classes
+// Optional query: ?courseId=xxxx
+router.get(
+  "/recorded-classes",
+  getRecordedClasses
+);
+
+// Get single recorded class by ID
+router.get(
+  "/recorded-class/:id",
+  getRecordedClassById
+);
+
+// Teacher updates recorded class
+router.put(
+  "/recorded-class/:id",
+  authToken,
+  updateRecordedClass
+);
+
+// Teacher deletes recorded class
+router.delete(
+  "/recorded-class/:id",
+  authToken,
+  deleteRecordedClass
+);
+
+
 
 module.exports = router;

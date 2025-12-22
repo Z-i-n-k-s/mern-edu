@@ -23,8 +23,12 @@ import StudentAssignment from "../pages/StudentAssignment";
 import TeacherAssignmentFeedback from "../pages/TeacherAssignmentFeedbacke";
 import StudentAssignmentFeedback from "../pages/StudentAssignmentFeedback";
 import TeacherCreateQuiz from "../pages/TeacherCreateQuiz";
-import StudentTakeQuiz from "../pages/StudentTakeQuiz";
 import TakeQuiz from "../components/TakeQuiz";
+import StudentQuizMarks from "../pages/StudentQuizMarks";
+import StudentExploreUniversities from "../pages/StudentExplorUniversities";
+import TeacherSeeReview from "../pages/TeacherSeeReview";
+import TeacherPostRecordClass from "../pages/TeacherPostRecordClass";
+import StudentSeeRecordedClasses from "../pages/StudentSeeRecordedClasses";
 
 // Redirect root
 const RootRedirect = () => {
@@ -108,18 +112,34 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: "/student/all-quiz",
-        element: (
-          <ProtectedRoute role={ROLE.STUDENT}>
-            <StudentTakeQuiz />
-          </ProtectedRoute>
-        ),
-      },
-      {
         path: "/student/take-quiz",
         element: (
           <ProtectedRoute role={ROLE.STUDENT}>
             <TakeQuiz />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/student/quiz-marks",
+        element: (
+          <ProtectedRoute role={ROLE.STUDENT}>
+            <StudentQuizMarks />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/student/uni",
+        element: (
+          <ProtectedRoute role={ROLE.STUDENT}>
+            <StudentExploreUniversities />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/student/record-class",
+        element: (
+          <ProtectedRoute role={ROLE.STUDENT}>
+            <StudentSeeRecordedClasses />
           </ProtectedRoute>
         ),
       },
@@ -154,6 +174,22 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute role={ROLE.TEACHER}>
             <TeacherPostAssignment />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/teacher/course-review",
+        element: (
+          <ProtectedRoute role={ROLE.TEACHER}>
+            <TeacherSeeReview />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/teacher/recorded-class",
+        element: (
+          <ProtectedRoute role={ROLE.TEACHER}>
+            <TeacherPostRecordClass />
           </ProtectedRoute>
         ),
       },

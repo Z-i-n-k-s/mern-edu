@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import SummaryApi from '../common';
 import { 
   BookOpen, 
   TrendingUp,
@@ -19,349 +21,501 @@ import {
   GraduationCap,
   BarChart3,
   Brain,
-  Flame
+  Flame,
+  AlertCircle,
+  Upload,
+  ExternalLink
 } from 'lucide-react';
 
 const StudentDashboard = () => {
-  const [stats] = useState({
-    enrolledCourses: 5,
-    completedCourses: 12,
-    learningHours: 47,
-    averageScore: 87
-  });
+  const user = useSelector((state) => state?.user?.user);
+  const studentId = user?._id || user?.id;
+  
+  const [courses, setCourses] = useState([]);
+  const [liveClasses, setLiveClasses] = useState([]);
+  const [assignments, setAssignments] = useState([]);
+  const [submittedAssignments, setSubmittedAssignments] = useState({});
+  const [quizAttempts, setQuizAttempts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState('overview');
 
-  const [enrolledCourses] = useState([
-    { 
-      id: 1, 
-      title: 'Web Development Bootcamp', 
-      instructor: 'Prof. Sarah Ahmed',
-      progress: 65, 
-      thumbnail: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400',
-      nextLesson: 'React Hooks Deep Dive',
-      totalLessons: 48,
-      completedLessons: 31,
-      category: 'Web Development',
-      deadline: '2 days left'
-    },
-    { 
-      id: 2, 
-      title: 'Data Structures & Algorithms', 
-      instructor: 'Dr. Michael Chen',
-      progress: 42, 
-      thumbnail: 'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=400',
-      nextLesson: 'Binary Search Trees',
-      totalLessons: 35,
-      completedLessons: 15,
-      category: 'Computer Science',
-      deadline: '5 days left'
-    },
-    { 
-      id: 3, 
-      title: 'Python for Data Science', 
-      instructor: 'Prof. Emma Wilson',
-      progress: 88, 
-      thumbnail: 'https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=400',
-      nextLesson: 'Machine Learning Basics',
-      totalLessons: 30,
-      completedLessons: 26,
-      category: 'Data Science',
-      deadline: '1 week left'
-    }
-  ]);
+  // Fetch enrolled courses
+  useEffect(() => {
+    const fetchStudentCourses = async () => {
+      if (!studentId) return;
 
-  const [upcomingClasses] = useState([
-    { 
-      id: 1, 
-      title: 'Live Q&A Session', 
-      course: 'Web Development',
-      instructor: 'Prof. Sarah Ahmed',
-      time: 'Today, 3:00 PM', 
-      duration: '1 hour',
-      type: 'live'
-    },
-    { 
-      id: 2, 
-      title: 'Algorithm Workshop', 
-      course: 'Data Structures',
-      instructor: 'Dr. Michael Chen',
-      time: 'Tomorrow, 10:00 AM', 
-      duration: '2 hours',
-      type: 'live'
-    },
-    { 
-      id: 3, 
-      title: 'Project Review', 
-      course: 'Python Programming',
-      instructor: 'Prof. Emma Wilson',
-      time: 'Dec 10, 2:00 PM', 
-      duration: '1.5 hours',
-      type: 'recorded'
-    }
-  ]);
+      try {
+        const response = await fetch(SummaryApi.getStudentCourses(studentId).url, {
+          method: SummaryApi.getStudentCourses(studentId).method,
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        });
 
-  const [recentActivity] = useState([
-    { id: 1, type: 'completed', course: 'Web Development', item: 'React Fundamentals Quiz', score: 92, time: '2 hours ago' },
-    { id: 2, type: 'submitted', course: 'Data Structures', item: 'Binary Tree Assignment', time: '5 hours ago' },
-    { id: 3, type: 'earned', course: 'Python Programming', item: 'Course Completion Certificate', time: '1 day ago' },
-    { id: 4, type: 'started', course: 'Web Development', item: 'Advanced JavaScript Module', time: '2 days ago' }
-  ]);
+        const data = await response.json();
+        if (response.ok) {
+          setCourses(data);
+        } else {
+          setError(data.message || "Failed to fetch courses");
+        }
+      } catch (err) {
+        console.error(err);
+        setError("Error fetching courses");
+      }
+    };
 
-  const [achievements] = useState([
-    { title: 'Fast Learner', description: 'Completed 5 courses in a month', icon: <Zap className="text-yellow-500" size={24} />, earned: true },
-    { title: 'Perfect Score', description: 'Scored 100% in 3 quizzes', icon: <Trophy className="text-amber-500" size={24} />, earned: true },
-    { title: 'Streak Master', description: '30-day learning streak', icon: <Flame className="text-orange-500" size={24} />, earned: false },
-    { title: 'Team Player', description: 'Helped 10 fellow students', icon: <Users className="text-blue-500" size={24} />, earned: false }
-  ]);
+    fetchStudentCourses();
+  }, [studentId]);
+
+  // Fetch live classes
+  useEffect(() => {
+    const fetchLiveClasses = async () => {
+      if (!studentId) return;
+
+      try {
+        const res = await fetch(SummaryApi.studentAllLiveClasses.url, {
+          method: SummaryApi.studentAllLiveClasses.method,
+          credentials: "include",
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          setLiveClasses(data.data || []);
+        }
+      } catch (err) {
+        console.error("Failed to load live classes", err);
+      }
+    };
+
+    fetchLiveClasses();
+  }, [studentId]);
+
+  // Fetch assignments
+  useEffect(() => {
+    if (!courses.length) return;
+
+    const fetchAssignments = async () => {
+      try {
+        const allAssignments = [];
+        for (const course of courses) {
+          const res = await fetch(
+            `${SummaryApi.getAssignmentsByCourse.url}?courseId=${course._id}`,
+            {
+              method: SummaryApi.getAssignmentsByCourse.method,
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+            }
+          );
+          const data = await res.json();
+          if (res.ok) allAssignments.push(...data);
+        }
+        setAssignments(allAssignments);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchAssignments();
+  }, [courses]);
+
+  // Fetch submitted assignments
+  useEffect(() => {
+    if (!studentId) return;
+
+    const fetchSubmitted = async () => {
+      try {
+        const res = await fetch(
+          `${SummaryApi.getAssignmentAnswersByStudent.url}?studentId=${studentId}`,
+          {
+            method: SummaryApi.getAssignmentAnswersByStudent.method,
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+          }
+        );
+        const data = await res.json();
+        if (res.ok) {
+          const submittedMap = {};
+          data.forEach((item) => {
+            submittedMap[item.assignmentQuestionId] = true;
+          });
+          setSubmittedAssignments(submittedMap);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSubmitted();
+  }, [studentId]);
+
+  // Calculate stats
+  const stats = {
+    enrolledCourses: courses.length,
+    upcomingClasses: liveClasses.filter(c => c.status === 'scheduled').length,
+    pendingAssignments: assignments.filter(a => !submittedAssignments[a._id]).length,
+    completedAssignments: assignments.filter(a => submittedAssignments[a._id]).length,
+  };
+
+  const upcomingLiveClasses = liveClasses
+    .filter(c => c.status === 'scheduled' || c.status === 'live')
+    .sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
+    .slice(0, 3);
+
+  const pendingAssignments = assignments
+    .filter(a => !submittedAssignments[a._id])
+    .slice(0, 5);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-slate-800 mb-2">Welcome back, Student! 🎓</h1>
-        <p className="text-slate-600">Continue your learning journey today</p>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border border-slate-100">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-purple-100 rounded-xl">
-              <BookOpen className="text-purple-600" size={24} />
+      <div className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Welcome back, {user?.name || 'Student'}!
+              </h1>
+              <p className="mt-1 text-gray-600">Track your learning journey</p>
             </div>
-            <span className="text-xs font-semibold text-purple-600 bg-purple-50 px-2 py-1 rounded-full">Active</span>
-          </div>
-          <h3 className="text-3xl font-bold text-slate-800 mb-1">{stats.enrolledCourses}</h3>
-          <p className="text-slate-600 text-sm">Enrolled Courses</p>
-        </div>
-
-        <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border border-slate-100">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-green-100 rounded-xl">
-              <CheckCircle className="text-green-600" size={24} />
+            <div className="flex items-center space-x-2">
+              <Flame className="w-6 h-6 text-orange-500" />
+              <span className="text-2xl font-bold text-gray-900">
+                {stats.completedAssignments}
+              </span>
+              <span className="text-gray-600">streak</span>
             </div>
-            <span className="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full">+3 this month</span>
-          </div>
-          <h3 className="text-3xl font-bold text-slate-800 mb-1">{stats.completedCourses}</h3>
-          <p className="text-slate-600 text-sm">Completed Courses</p>
-        </div>
-
-        <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border border-slate-100">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-blue-100 rounded-xl">
-              <Clock className="text-blue-600" size={24} />
-            </div>
-            <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded-full">This week</span>
-          </div>
-          <h3 className="text-3xl font-bold text-slate-800 mb-1">{stats.learningHours}h</h3>
-          <p className="text-slate-600 text-sm">Learning Hours</p>
-        </div>
-
-        <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border border-slate-100">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-amber-100 rounded-xl">
-              <TrendingUp className="text-amber-600" size={24} />
-            </div>
-            <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-1 rounded-full">★ Excellent</span>
-          </div>
-          <h3 className="text-3xl font-bold text-slate-800 mb-1">{stats.averageScore}%</h3>
-          <p className="text-slate-600 text-sm">Average Score</p>
-        </div>
-      </div>
-
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        {/* Continue Learning Section */}
-        <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-lg border border-slate-100">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-indigo-100 rounded-lg">
-                <Play className="text-indigo-600" size={20} />
-              </div>
-              <h2 className="text-xl font-bold text-slate-800">Continue Learning</h2>
-            </div>
-            <button className="text-sm text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1">
-              View All
-              <ArrowRight size={16} />
-            </button>
-          </div>
-          
-          <div className="space-y-4">
-            {enrolledCourses.map((course) => (
-              <div key={course.id} className="flex flex-col md:flex-row gap-4 p-4 bg-gradient-to-r from-slate-50 to-purple-50 rounded-xl hover:shadow-md transition-all duration-200 border border-slate-100">
-                <div className="relative w-full md:w-32 h-32 md:h-24 rounded-lg overflow-hidden flex-shrink-0">
-                  <img 
-                    src={course.thumbnail} 
-                    alt={course.title}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                  <div className="absolute bottom-2 left-2 text-white text-xs font-semibold">
-                    {course.category}
-                  </div>
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-slate-800 mb-1 truncate">{course.title}</h3>
-                  <p className="text-sm text-slate-600 mb-2">by {course.instructor}</p>
-                  
-                  <div className="mb-3">
-                    <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
-                      <span>{course.completedLessons}/{course.totalLessons} lessons</span>
-                      <span className="font-semibold text-purple-600">{course.progress}%</span>
-                    </div>
-                    <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                      <div 
-                        className="bg-gradient-to-r from-purple-500 to-pink-500 h-full rounded-full transition-all duration-500"
-                        style={{ width: `${course.progress}%` }}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs text-slate-500">
-                      <Clock size={14} />
-                      <span>{course.deadline}</span>
-                    </div>
-                    <button className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all text-sm font-medium flex items-center gap-2">
-                      <Play size={14} />
-                      Continue
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Upcoming Classes */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-100">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Calendar className="text-blue-600" size={20} />
-            </div>
-            <h2 className="text-xl font-bold text-slate-800">Upcoming Classes</h2>
-          </div>
-          
-          <div className="space-y-3">
-            {upcomingClasses.map((classItem) => (
-              <div key={classItem.id} className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    {classItem.type === 'live' ? (
-                      <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                    ) : (
-                      <Video size={14} className="text-slate-400" />
-                    )}
-                    <span className="text-xs font-semibold text-blue-600">{classItem.type === 'live' ? 'LIVE' : 'RECORDED'}</span>
-                  </div>
-                </div>
-                <h3 className="font-semibold text-slate-800 text-sm mb-1">{classItem.title}</h3>
-                <p className="text-xs text-slate-600 mb-2">{classItem.course}</p>
-                <div className="flex items-center justify-between text-xs text-slate-500">
-                  <span className="flex items-center gap-1">
-                    <Clock size={12} />
-                    {classItem.time}
-                  </span>
-                  <span>{classItem.duration}</span>
-                </div>
-                <button className="w-full mt-3 px-3 py-2 bg-white text-blue-600 border-2 border-blue-200 rounded-lg hover:bg-blue-50 transition-colors text-xs font-medium">
-                  {classItem.type === 'live' ? 'Join Class' : 'Watch Recording'}
-                </button>
-              </div>
-            ))}
           </div>
         </div>
       </div>
 
-      {/* Bottom Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Activity */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-100">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <BarChart3 className="text-green-600" size={20} />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center">
+            <AlertCircle className="w-5 h-5 mr-2" />
+            {error}
+          </div>
+        )}
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm font-medium">Enrolled Courses</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{stats.enrolledCourses}</p>
               </div>
-              <h2 className="text-xl font-bold text-slate-800">Recent Activity</h2>
+              <div className="bg-indigo-100 p-3 rounded-lg">
+                <BookOpen className="w-6 h-6 text-indigo-600" />
+              </div>
             </div>
           </div>
-          
-          <div className="space-y-4">
-            {recentActivity.map((activity) => (
-              <div key={activity.id} className="flex items-start gap-4 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors duration-200">
-                <div className={`p-2 rounded-lg ${
-                  activity.type === 'completed' ? 'bg-green-100' :
-                  activity.type === 'submitted' ? 'bg-blue-100' :
-                  activity.type === 'earned' ? 'bg-amber-100' :
-                  'bg-purple-100'
-                }`}>
-                  {activity.type === 'completed' && <CheckCircle className="text-green-600" size={18} />}
-                  {activity.type === 'submitted' && <FileText className="text-blue-600" size={18} />}
-                  {activity.type === 'earned' && <Award className="text-amber-600" size={18} />}
-                  {activity.type === 'started' && <Play className="text-purple-600" size={18} />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-800 mb-1 truncate">
-                    {activity.type === 'completed' && 'Completed: '}
-                    {activity.type === 'submitted' && 'Submitted: '}
-                    {activity.type === 'earned' && 'Earned: '}
-                    {activity.type === 'started' && 'Started: '}
-                    <span className="text-purple-600">{activity.item}</span>
-                  </p>
-                  <p className="text-xs text-slate-600">{activity.course} • {activity.time}</p>
-                  {activity.score && (
-                    <div className="mt-1">
-                      <span className="text-xs font-semibold text-green-600 bg-green-50 px-2 py-0.5 rounded">
-                        Score: {activity.score}%
-                      </span>
-                    </div>
-                  )}
-                </div>
+
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm font-medium">Upcoming Classes</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{stats.upcomingClasses}</p>
               </div>
-            ))}
+              <div className="bg-green-100 p-3 rounded-lg">
+                <Video className="w-6 h-6 text-green-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm font-medium">Pending Assignments</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{stats.pendingAssignments}</p>
+              </div>
+              <div className="bg-orange-100 p-3 rounded-lg">
+                <FileText className="w-6 h-6 text-orange-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm font-medium">Completed</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{stats.completedAssignments}</p>
+              </div>
+              <div className="bg-purple-100 p-3 rounded-lg">
+                <CheckCircle className="w-6 h-6 text-purple-600" />
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Achievements */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-100">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-amber-100 rounded-lg">
-                <Trophy className="text-amber-600" size={20} />
-              </div>
-              <h2 className="text-xl font-bold text-slate-800">Achievements</h2>
-            </div>
-            <button className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">View All</button>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            {achievements.map((achievement, index) => (
-              <div 
-                key={index} 
-                className={`p-4 rounded-xl border-2 transition-all duration-200 ${
-                  achievement.earned 
-                    ? 'bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-200 hover:shadow-md' 
-                    : 'bg-slate-50 border-slate-200 opacity-60'
+        {/* Tabs */}
+        <div className="mb-6 border-b border-gray-200">
+          <div className="flex space-x-8">
+            {['overview', 'courses', 'assignments', 'live-classes'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === tab
+                    ? 'border-indigo-600 text-indigo-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                <div className="flex flex-col items-center text-center">
-                  <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-3 ${
-                    achievement.earned ? 'bg-white shadow-lg' : 'bg-slate-200'
-                  }`}>
-                    {achievement.icon}
-                  </div>
-                  <h3 className="font-semibold text-slate-800 text-sm mb-1">{achievement.title}</h3>
-                  <p className="text-xs text-slate-600">{achievement.description}</p>
-                  {achievement.earned && (
-                    <div className="mt-2">
-                      <CheckCircle className="text-green-500" size={16} />
-                    </div>
-                  )}
-                </div>
-              </div>
+                {tab.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+              </button>
             ))}
           </div>
         </div>
+
+        {/* Tab Content */}
+        {activeTab === 'overview' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Upcoming Live Classes */}
+            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                  <Video className="w-5 h-5 mr-2 text-indigo-600" />
+                  Upcoming Live Classes
+                </h2>
+              </div>
+              
+              {upcomingLiveClasses.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">No upcoming classes</p>
+              ) : (
+                <div className="space-y-4">
+                  {upcomingLiveClasses.map((liveClass) => (
+                    <div key={liveClass._id} className="border border-gray-200 rounded-lg p-4 hover:border-indigo-300 transition-colors">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-gray-900">{liveClass.title}</h3>
+                          <p className="text-sm text-gray-600 mt-1">{liveClass.description}</p>
+                          <div className="flex items-center mt-3 space-x-4 text-sm text-gray-500">
+                            <span className="flex items-center">
+                              <Calendar className="w-4 h-4 mr-1" />
+                              {new Date(liveClass.startTime).toLocaleDateString()}
+                            </span>
+                            <span className="flex items-center">
+                              <Clock className="w-4 h-4 mr-1" />
+                              {new Date(liveClass.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            </span>
+                          </div>
+                        </div>
+                        {liveClass.status === 'live' && (
+                          <span className="bg-red-100 text-red-700 text-xs font-semibold px-3 py-1 rounded-full flex items-center">
+                            <span className="w-2 h-2 bg-red-600 rounded-full mr-2 animate-pulse"></span>
+                            LIVE
+                          </span>
+                        )}
+                      </div>
+                      <a
+                        href={liveClass.meetingLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-3 inline-flex items-center text-indigo-600 hover:text-indigo-700 text-sm font-medium"
+                      >
+                        Join Class <ExternalLink className="w-4 h-4 ml-1" />
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Pending Assignments */}
+            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                  <FileText className="w-5 h-5 mr-2 text-orange-600" />
+                  Pending Assignments
+                </h2>
+              </div>
+              
+              {pendingAssignments.length === 0 ? (
+                <div className="text-center py-8">
+                  <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-2" />
+                  <p className="text-gray-500">All caught up!</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {pendingAssignments.map((assignment) => (
+                    <div key={assignment._id} className="border border-gray-200 rounded-lg p-4 hover:border-orange-300 transition-colors">
+                      <h3 className="font-semibold text-gray-900">{assignment.assignmentName}</h3>
+                      <p className="text-sm text-gray-600 mt-1 line-clamp-2">{assignment.assignmentQuestion}</p>
+                      <div className="mt-3 flex items-center justify-between">
+                        <span className="text-xs text-gray-500">
+                          Created {new Date(assignment.createdAt).toLocaleDateString()}
+                        </span>
+                        <button className="text-orange-600 hover:text-orange-700 text-sm font-medium flex items-center">
+                          Submit <ArrowRight className="w-4 h-4 ml-1" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'courses' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {courses.length === 0 ? (
+              <div className="col-span-full text-center py-12">
+                <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500">No courses enrolled yet</p>
+              </div>
+            ) : (
+              courses.map((course) => (
+                <div key={course._id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
+                  <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-32"></div>
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-bold text-lg text-gray-900">{course.Course_Name}</h3>
+                      <span className="bg-indigo-100 text-indigo-700 text-xs font-semibold px-2 py-1 rounded">
+                        {course.Credit} Credits
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-4">{course.Description || 'No description available'}</p>
+                    <div className="flex items-center justify-between text-sm text-gray-500">
+                      <span className="flex items-center">
+                        <Users className="w-4 h-4 mr-1" />
+                        {course.studentsEnrolledIds?.length || 0} students
+                      </span>
+                      <span className="font-medium text-indigo-600">{course.Course_Initial}</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {activeTab === 'assignments' && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div className="p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-6">All Assignments</h2>
+              
+              {assignments.length === 0 ? (
+                <div className="text-center py-12">
+                  <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No assignments available</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {assignments.map((assignment) => {
+                    const isSubmitted = submittedAssignments[assignment._id];
+                    return (
+                      <div key={assignment._id} className="border border-gray-200 rounded-lg p-5 hover:border-gray-300 transition-colors">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-3 mb-2">
+                              <h3 className="font-semibold text-gray-900">{assignment.assignmentName}</h3>
+                              {isSubmitted ? (
+                                <span className="bg-green-100 text-green-700 text-xs font-semibold px-3 py-1 rounded-full flex items-center">
+                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                  Submitted
+                                </span>
+                              ) : (
+                                <span className="bg-orange-100 text-orange-700 text-xs font-semibold px-3 py-1 rounded-full">
+                                  Pending
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-gray-600 text-sm mb-3">{assignment.assignmentQuestion}</p>
+                            <span className="text-xs text-gray-500">
+                              Created on {new Date(assignment.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                          {!isSubmitted && (
+                            <button className="ml-4 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center">
+                              <Upload className="w-4 h-4 mr-2" />
+                              Submit
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'live-classes' && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div className="p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-6">All Live Classes</h2>
+              
+              {liveClasses.length === 0 ? (
+                <div className="text-center py-12">
+                  <Video className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No live classes scheduled</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {liveClasses.map((liveClass) => (
+                    <div key={liveClass._id} className="border border-gray-200 rounded-lg p-5 hover:border-gray-300 transition-colors">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <h3 className="font-semibold text-gray-900">{liveClass.title}</h3>
+                            <span className={`text-xs font-semibold px-3 py-1 rounded-full ${
+                              liveClass.status === 'live' ? 'bg-red-100 text-red-700' :
+                              liveClass.status === 'scheduled' ? 'bg-blue-100 text-blue-700' :
+                              liveClass.status === 'ended' ? 'bg-gray-100 text-gray-700' :
+                              'bg-yellow-100 text-yellow-700'
+                            }`}>
+                              {liveClass.status.toUpperCase()}
+                            </span>
+                          </div>
+                          <p className="text-gray-600 text-sm mb-3">{liveClass.description}</p>
+                          <div className="flex items-center space-x-6 text-sm text-gray-500">
+                            <span className="flex items-center">
+                              <Calendar className="w-4 h-4 mr-1" />
+                              {new Date(liveClass.startTime).toLocaleDateString()}
+                            </span>
+                            <span className="flex items-center">
+                              <Clock className="w-4 h-4 mr-1" />
+                              {new Date(liveClass.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            </span>
+                            <span className="flex items-center">
+                              <Video className="w-4 h-4 mr-1" />
+                              {liveClass.durationMinutes} min
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      {(liveClass.status === 'live' || liveClass.status === 'scheduled') && (
+                        <a
+                          href={liveClass.meetingLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                        >
+                          <ExternalLink className="w-4 h-4 mr-2" />
+                          Join on {liveClass.platform}
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
