@@ -1,8 +1,34 @@
-const { AssignmentQuestion, AssignmentAnswer, AssignmentFeedback } = require("../../models/assignmentModel");
+const {
+  AssignmentQuestion,
+  AssignmentAnswer,
+  AssignmentFeedback,
+} = require("../../models/assignmentModel");
 
-// Create a new assignment
+/* =========================
+   Create a new assignment
+   ========================= */
 exports.createAssignment = async (req, res) => {
-  const { teacherId, courseId, assignmentName, assignmentQuestion } = req.body;
+  const {
+    teacherId,
+    courseId,
+    assignmentName,
+    assignmentQuestion,
+    deadline,
+  } = req.body;
+
+  if (
+    !teacherId ||
+    !courseId ||
+    !assignmentName ||
+    !assignmentQuestion ||
+    !deadline
+  ) {
+    return res.status(400).json({ message: "All fields including deadline are required" });
+  }
+
+  if (new Date(deadline) <= new Date()) {
+    return res.status(400).json({ message: "Deadline must be a future date" });
+  }
 
   try {
     const assignment = new AssignmentQuestion({
@@ -10,6 +36,7 @@ exports.createAssignment = async (req, res) => {
       courseId,
       assignmentName,
       assignmentQuestion,
+      deadline,
     });
 
     await assignment.save();
@@ -20,7 +47,9 @@ exports.createAssignment = async (req, res) => {
   }
 };
 
-// Get assignments by course
+/* =========================
+   Get assignments by course
+   ========================= */
 exports.getAssignmentsByCourse = async (req, res) => {
   const { courseId } = req.query;
 
@@ -33,58 +62,68 @@ exports.getAssignmentsByCourse = async (req, res) => {
     res.json(assignments);
   } catch (err) {
     console.error(err);
-    res
-      .status(500)
-      .json({ message: "Server error while fetching assignments" });
+    res.status(500).json({ message: "Server error while fetching assignments" });
   }
 };
 
-// Get assignments by teacher
+/* =========================
+   Get assignments by teacher
+   ========================= */
 exports.getAssignmentsByTeacher = async (req, res) => {
   const { teacherId } = req.query;
 
   if (!teacherId) {
-    return res.status(400).json({ message: " teacherId is required" });
+    return res.status(400).json({ message: "teacherId is required" });
   }
 
-  const filter = {};
-
-  if (teacherId) filter.teacherId = teacherId;
-
   try {
-    const assignments = await AssignmentQuestion.find(filter);
+    const assignments = await AssignmentQuestion.find({ teacherId });
     res.json(assignments);
   } catch (err) {
     console.error("Error fetching assignments:", err);
-    res
-      .status(500)
-      .json({ message: "Server error while fetching assignments" });
+    res.status(500).json({ message: "Server error while fetching assignments" });
   }
 };
 
-// Submit assignment answer
+/* =========================
+   Submit assignment answer
+   ========================= */
 exports.submitAssignmentAnswer = async (req, res) => {
   const { assignmentQuestionId, studentId, answers } = req.body;
 
   if (
     !assignmentQuestionId ||
     !studentId ||
-    !answers ||
-    !Array.isArray(answers)
+    !Array.isArray(answers) ||
+    answers.length === 0
   ) {
     return res.status(400).json({ message: "Missing or invalid fields" });
   }
 
   try {
+    // Fetch assignment to check deadline
+    const assignment = await AssignmentQuestion.findById(assignmentQuestionId);
+    if (!assignment) {
+      return res.status(404).json({ message: "Assignment not found" });
+    }
+
+    // Deadline check
+    if (new Date() > assignment.deadline) {
+      return res.status(403).json({
+        message: "Submission deadline has passed",
+      });
+    }
+
+    // Prevent multiple submissions
     const alreadySubmitted = await AssignmentAnswer.findOne({
       assignmentQuestionId,
       studentId,
     });
 
     if (alreadySubmitted) {
-      return res
-        .status(409)
-        .json({ message: "You have already submitted this assignment." });
+      return res.status(409).json({
+        message: "You have already submitted this assignment",
+      });
     }
 
     const newSubmission = new AssignmentAnswer({
@@ -94,7 +133,6 @@ exports.submitAssignmentAnswer = async (req, res) => {
     });
 
     await newSubmission.save();
-
     res.status(201).json({ message: "Submission successful" });
   } catch (err) {
     console.error("Error saving submission:", err);
@@ -102,14 +140,17 @@ exports.submitAssignmentAnswer = async (req, res) => {
   }
 };
 
-// Get assignment answers by student
+/* =========================
+   Get assignment answers by student
+   ========================= */
 exports.getAssignmentAnswersByStudent = async (req, res) => {
-  try {
-    const { studentId } = req.query;
-    if (!studentId) {
-      return res.status(400).json({ error: "studentId is required" });
-    }
+  const { studentId } = req.query;
 
+  if (!studentId) {
+    return res.status(400).json({ error: "studentId is required" });
+  }
+
+  try {
     const answers = await AssignmentAnswer.find({ studentId });
     res.json(answers);
   } catch (err) {
@@ -118,23 +159,18 @@ exports.getAssignmentAnswersByStudent = async (req, res) => {
   }
 };
 
-// Get assignment answers by question
+/* =========================
+   Get assignment answers by question
+   ========================= */
 exports.getAssignmentAnswersByQuestion = async (req, res) => {
+  const { assignmentQuestionId } = req.query;
+
+  if (!assignmentQuestionId) {
+    return res.status(400).json({ error: "assignmentQuestionId is required" });
+  }
+
   try {
-    const { assignmentQuestionId } = req.query;
-
-    if (!assignmentQuestionId) {
-      return res
-        .status(400)
-        .json({ error: " assignmentQuestionId is required" });
-    }
-
-    const filter = {};
-
-    if (assignmentQuestionId)
-      filter.assignmentQuestionId = assignmentQuestionId;
-
-    const answers = await AssignmentAnswer.find(filter);
+    const answers = await AssignmentAnswer.find({ assignmentQuestionId });
     res.json(answers);
   } catch (err) {
     console.error("Error fetching assignment answers:", err);
@@ -142,16 +178,16 @@ exports.getAssignmentAnswersByQuestion = async (req, res) => {
   }
 };
 
-// Submit assignment feedback
+/* =========================
+   Submit assignment feedback
+   ========================= */
 exports.submitAssignmentFeedback = async (req, res) => {
   const { assignmentAnswerId, teacherId, feedback } = req.body;
 
   if (!assignmentAnswerId || !teacherId || !feedback) {
-    return res
-      .status(400)
-      .json({
-        message: "assignmentAnswerId, teacherId, and feedback are required",
-      });
+    return res.status(400).json({
+      message: "assignmentAnswerId, teacherId, and feedback are required",
+    });
   }
 
   try {
@@ -169,7 +205,9 @@ exports.submitAssignmentFeedback = async (req, res) => {
   }
 };
 
-// Get assignment feedback by teacher
+/* =========================
+   Get assignment feedback by teacher
+   ========================= */
 exports.getAssignmentFeedbackByTeacher = async (req, res) => {
   const { teacherId } = req.query;
 
@@ -186,7 +224,9 @@ exports.getAssignmentFeedbackByTeacher = async (req, res) => {
   }
 };
 
-// Get assignment feedback by answer
+/* =========================
+   Get assignment feedback by answer
+   ========================= */
 exports.getAssignmentFeedbackByAnswer = async (req, res) => {
   const { assignmentAnswerId } = req.query;
 
@@ -196,11 +236,13 @@ exports.getAssignmentFeedbackByAnswer = async (req, res) => {
 
   try {
     const feedbacks = await AssignmentFeedback.find({ assignmentAnswerId });
+
     if (feedbacks.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "No feedback found for this answer" });
+      return res.status(404).json({
+        message: "No feedback found for this answer",
+      });
     }
+
     res.json(feedbacks);
   } catch (err) {
     console.error("Error fetching feedback by answer ID:", err);

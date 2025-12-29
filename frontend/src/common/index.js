@@ -5,14 +5,8 @@ const SummaryApi = {
   signUP: { url: `${backendDomain}/api/signup`, method: "post" },
   signIn: { url: `${backendDomain}/api/signin`, method: "post" },
   current_user: { url: `${backendDomain}/api/user-details`, method: "get" },
-  forgotPassword: {
-    url: `${backendDomain}/api/forgot-password`,
-    method: "post",
-  },
-  verifyResetToken: {
-    url: `${backendDomain}/api/verify-reset-token`,
-    method: "get",
-  },
+  forgotPassword: { url: `${backendDomain}/api/forgot-password`, method: "post" },
+  verifyResetToken: { url: `${backendDomain}/api/verify-reset-token`, method: "get" },
   resetPassword: { url: `${backendDomain}/api/reset-password`, method: "post" },
   logout_user: { url: `${backendDomain}/api/userLogout`, method: "get" },
   allUser: { url: `${backendDomain}/api/all-user`, method: "get" },
@@ -32,11 +26,13 @@ const SummaryApi = {
     method: "get",
   }),
 
+
+  deleteCourse: (courseId) => ({
+    url: `${backendDomain}/api/course/${courseId}`,
+    method: "delete",
+  }),
+
   // ------------------- STUDENT COURSE APIS -------------------
-  studentAllCourses: {
-    url: `${backendDomain}/api/student/courses`,
-    method: "get",
-  },
   enrollInCourse: (courseId) => ({
     url: `${backendDomain}/api/course/enroll/${courseId}`,
     method: "post",
@@ -47,10 +43,7 @@ const SummaryApi = {
   }),
 
   // ------------------- LIVE CLASS APIS -------------------
-  createLiveClass: {
-    url: `${backendDomain}/api/live-class/create`,
-    method: "post",
-  },
+  createLiveClass: { url: `${backendDomain}/api/live-class/create`, method: "post" },
   updateLiveClass: (liveClassId) => ({
     url: `${backendDomain}/api/live-class/update/${liveClassId}`,
     method: "put",
@@ -70,10 +63,7 @@ const SummaryApi = {
 
   // ------------------- ASSIGNMENT APIS -------------------
   createAssignment: { url: `${backendDomain}/api/assignments`, method: "post" },
-  getAssignmentsByCourse: {
-    url: `${backendDomain}/api/assignments`,
-    method: "get",
-  },
+  getAssignmentsByCourse: { url: `${backendDomain}/api/assignments`, method: "get" },
   getAssignmentsByTeacher: {
     url: `${backendDomain}/api/assignments-questions`,
     method: "get",
@@ -112,67 +102,45 @@ const SummaryApi = {
     url: `${backendDomain}/api/course/${courseId}/quizzes`,
     method: "get",
   }),
-  saveQuizAttempt: {
-    url: `${backendDomain}/api/quizAttempt`,
-    method: "post",
-  },
+  saveQuizAttempt: { url: `${backendDomain}/api/quizAttempt`, method: "post" },
   getQuizAttemptsByStudent: (studentId) => ({
     url: `${backendDomain}/api/student/${studentId}/quizAttempts`,
     method: "get",
   }),
+
   // ------------------- REVIEW APIS -------------------
-  createReview: {
-    url: `${backendDomain}/api/reviews`,
-    method: "post",
-  },
-
-  getAllReviews: {
-    url: `${backendDomain}/api/reviews`,
-    method: "get",
-  },
-
+  createReview: { url: `${backendDomain}/api/reviews`, method: "post" },
+  getAllReviews: { url: `${backendDomain}/api/reviews`, method: "get" },
   updateReview: (reviewId) => ({
     url: `${backendDomain}/api/reviews/${reviewId}`,
     method: "put",
   }),
-
   deleteReview: (reviewId) => ({
     url: `${backendDomain}/api/reviews/${reviewId}`,
     method: "delete",
   }),
-    // ------------------- RECORDED CLASS APIS -------------------
 
-  // Teacher creates a recorded class
+  // ------------------- RECORDED CLASS APIS -------------------
   createRecordedClass: {
     url: `${backendDomain}/api/recorded-class`,
     method: "post",
   },
-
-  // Get all recorded classes
-  // Optional query: ?courseId=xxxx
   getRecordedClasses: {
     url: `${backendDomain}/api/recorded-classes`,
     method: "get",
   },
-
-  // Get single recorded class by ID
   getRecordedClassById: (recordedClassId) => ({
     url: `${backendDomain}/api/recorded-class/${recordedClassId}`,
     method: "get",
   }),
-
-  // Teacher updates a recorded class
   updateRecordedClass: (recordedClassId) => ({
     url: `${backendDomain}/api/recorded-class/${recordedClassId}`,
     method: "put",
   }),
-
-  // Teacher deletes a recorded class
   deleteRecordedClass: (recordedClassId) => ({
     url: `${backendDomain}/api/recorded-class/${recordedClassId}`,
     method: "delete",
   }),
-
 };
 
 export default SummaryApi;

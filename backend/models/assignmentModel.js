@@ -6,6 +6,10 @@ const assignmentQuestionSchema = new mongoose.Schema({
   courseId: String,
   assignmentName: String,
   assignmentQuestion: String,
+  deadline: {
+    type: Date,
+    required: true
+  },
   createdAt: { type: Date, default: Date.now },
 });
 

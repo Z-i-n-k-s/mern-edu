@@ -5,6 +5,7 @@ const CreateAssignmentModal = ({ onClose, onSuccess, teacherId }) => {
   const [courseId, setCourseId] = useState("");
   const [assignmentName, setAssignmentName] = useState("");
   const [assignmentQuestion, setAssignmentQuestion] = useState("");
+  const [deadline, setDeadline] = useState("");
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -36,8 +37,16 @@ const CreateAssignmentModal = ({ onClose, onSuccess, teacherId }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!courseId || !assignmentName || !assignmentQuestion) {
-      setError("All fields are required.");
+    if (!courseId || !assignmentName || !assignmentQuestion || !deadline) {
+      setError("All fields including deadline are required.");
+      return;
+    }
+
+    // Validate deadline is in the future
+    const selectedDeadline = new Date(deadline);
+    const now = new Date();
+    if (selectedDeadline <= now) {
+      setError("Deadline must be in the future.");
       return;
     }
 
@@ -52,6 +61,7 @@ const CreateAssignmentModal = ({ onClose, onSuccess, teacherId }) => {
           courseId,
           assignmentName,
           assignmentQuestion,
+          deadline,
         }),
       });
       const data = await res.json();
@@ -69,14 +79,21 @@ const CreateAssignmentModal = ({ onClose, onSuccess, teacherId }) => {
     }
   };
 
+  // Get minimum datetime (current time)
+  const getMinDateTime = () => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    return now.toISOString().slice(0, 16);
+  };
+
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50 p-4 backdrop-blur-sm">
       <div 
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl transform transition-all"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl transform transition-all max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-200">
+        <div className="flex items-center justify-between p-6 border-b border-slate-200 sticky top-0 bg-white z-10">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
               <svg
@@ -218,6 +235,41 @@ const CreateAssignmentModal = ({ onClose, onSuccess, teacherId }) => {
                   </svg>
                 </div>
               </div>
+            </div>
+
+            {/* Deadline */}
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                Deadline
+                <span className="text-red-500 ml-1">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  type="datetime-local"
+                  value={deadline}
+                  onChange={(e) => setDeadline(e.target.value)}
+                  min={getMinDateTime()}
+                  className="w-full px-4 py-3 pl-11 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <p className="text-xs text-slate-500 mt-2">
+                Set the date and time when students can no longer submit
+              </p>
             </div>
 
             {/* Assignment Question */}
