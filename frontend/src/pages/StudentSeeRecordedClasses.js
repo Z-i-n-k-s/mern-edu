@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import { Play, Clock, Calendar, BookOpen, Video, X, Maximize2, Minimize2, AlertCircle } from "lucide-react";
+import { Play, Clock, Calendar, BookOpen, Video, ChevronDown, ChevronUp, AlertCircle, ExternalLink } from "lucide-react";
 import SummaryApi from "../common";
 
 const StudentSeeRecordedClasses = () => {
@@ -11,9 +11,8 @@ const StudentSeeRecordedClasses = () => {
   const [recordedClasses, setRecordedClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [selectedVideo, setSelectedVideo] = useState(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [videoError, setVideoError] = useState(false);
+  const [expandedRecording, setExpandedRecording] = useState(null);
+  const [videoErrors, setVideoErrors] = useState({});
 
   useEffect(() => {
     if (!studentId) return;
@@ -23,7 +22,6 @@ const StudentSeeRecordedClasses = () => {
       setError("");
 
       try {
-        // 1️⃣ Fetch courses enrolled by student
         const courseRes = await fetch(
           SummaryApi.getStudentCourses(studentId).url,
           {
@@ -37,7 +35,6 @@ const StudentSeeRecordedClasses = () => {
 
         setCourses(courseData);
 
-        // 2️⃣ Fetch all recorded classes
         const recRes = await fetch(SummaryApi.getRecordedClasses.url, {
           method: SummaryApi.getRecordedClasses.method,
           credentials: "include",
@@ -57,11 +54,9 @@ const StudentSeeRecordedClasses = () => {
     fetchData();
   }, [studentId]);
 
-  // Function to detect video source type and convert URL if needed
   const getVideoEmbedUrl = (url) => {
     if (!url) return null;
 
-    // YouTube detection
     if (url.includes('youtube.com') || url.includes('youtu.be')) {
       let videoId = '';
       if (url.includes('youtu.be/')) {
@@ -71,10 +66,9 @@ const StudentSeeRecordedClasses = () => {
       } else if (url.includes('embed/')) {
         videoId = url.split('embed/')[1].split('?')[0];
       }
-      return { type: 'youtube', url: `https://www.youtube.com/embed/${videoId}?autoplay=1` };
+      return { type: 'youtube', url: `https://www.youtube.com/embed/${videoId}` };
     }
 
-    // Google Drive detection
     if (url.includes('drive.google.com')) {
       let fileId = '';
       if (url.includes('/file/d/')) {
@@ -85,33 +79,25 @@ const StudentSeeRecordedClasses = () => {
       return { type: 'googledrive', url: `https://drive.google.com/file/d/${fileId}/preview` };
     }
 
-    // Vimeo detection
     if (url.includes('vimeo.com')) {
       const videoId = url.split('vimeo.com/')[1].split('?')[0];
-      return { type: 'vimeo', url: `https://player.vimeo.com/video/${videoId}?autoplay=1` };
+      return { type: 'vimeo', url: `https://player.vimeo.com/video/${videoId}` };
     }
 
-    // Direct video file (MP4, WebM, etc.)
     return { type: 'direct', url: url };
   };
 
-  const openVideoPlayer = (recording) => {
-    setSelectedVideo(recording);
-    setVideoError(false);
+  const toggleRecording = (recordingId) => {
+    if (expandedRecording === recordingId) {
+      setExpandedRecording(null);
+    } else {
+      setExpandedRecording(recordingId);
+      setVideoErrors(prev => ({ ...prev, [recordingId]: false }));
+    }
   };
 
-  const closeVideoPlayer = () => {
-    setSelectedVideo(null);
-    setIsFullscreen(false);
-    setVideoError(false);
-  };
-
-  const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
-  };
-
-  const handleVideoError = () => {
-    setVideoError(true);
+  const handleVideoError = (recordingId) => {
+    setVideoErrors(prev => ({ ...prev, [recordingId]: true }));
   };
 
   if (loading) {
@@ -137,12 +123,9 @@ const StudentSeeRecordedClasses = () => {
     );
   }
 
-  const videoSource = selectedVideo ? getVideoEmbedUrl(selectedVideo.videoUrl) : null;
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-3 bg-indigo-600 rounded-xl shadow-lg">
@@ -173,7 +156,6 @@ const StudentSeeRecordedClasses = () => {
                   key={course._id}
                   className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 hover:shadow-xl transition-shadow duration-300"
                 >
-                  {/* Course Header */}
                   <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6">
                     <div className="flex items-start justify-between">
                       <div>
@@ -199,7 +181,6 @@ const StudentSeeRecordedClasses = () => {
                     </div>
                   </div>
 
-                  {/* Recordings List */}
                   <div className="p-6">
                     {courseRecordings.length === 0 ? (
                       <div className="text-center py-12">
@@ -210,47 +191,125 @@ const StudentSeeRecordedClasses = () => {
                         <p className="text-gray-400 text-sm mt-1">Check back later for new recordings</p>
                       </div>
                     ) : (
-                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {courseRecordings.map((rec) => (
-                          <button
-                            key={rec._id}
-                            onClick={() => openVideoPlayer(rec)}
-                            className="group bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 hover:from-indigo-50 hover:to-purple-50 transition-all duration-300 border border-gray-200 hover:border-indigo-300 hover:shadow-md text-left w-full"
-                          >
-                            <div className="flex items-start justify-between mb-3">
-                              <div className="p-2.5 bg-white rounded-lg shadow-sm group-hover:bg-indigo-600 transition-colors duration-300">
-                                <Play className="w-5 h-5 text-indigo-600 group-hover:text-white transition-colors duration-300" />
-                              </div>
+                      <div className="space-y-4">
+                        {courseRecordings.map((rec) => {
+                          const isExpanded = expandedRecording === rec._id;
+                          const videoSource = getVideoEmbedUrl(rec.videoUrl);
+                          const hasError = videoErrors[rec._id];
+
+                          return (
+                            <div
+                              key={rec._id}
+                              className="border border-gray-200 rounded-xl overflow-hidden hover:border-indigo-300 transition-colors"
+                            >
+                              <button
+                                onClick={() => toggleRecording(rec._id)}
+                                className="w-full bg-gradient-to-br from-gray-50 to-gray-100 hover:from-indigo-50 hover:to-purple-50 p-5 transition-all duration-300 text-left"
+                              >
+                                <div className="flex items-start justify-between gap-4">
+                                  <div className="flex items-start gap-4 flex-1">
+                                    <div className={`p-2.5 rounded-lg shadow-sm transition-colors duration-300 ${
+                                      isExpanded ? 'bg-indigo-600' : 'bg-white'
+                                    }`}>
+                                      <Play className={`w-5 h-5 transition-colors duration-300 ${
+                                        isExpanded ? 'text-white' : 'text-indigo-600'
+                                      }`} />
+                                    </div>
+                                    
+                                    <div className="flex-1 min-w-0">
+                                      <h3 className={`font-bold text-gray-800 mb-2 transition-colors ${
+                                        isExpanded ? 'text-indigo-600' : ''
+                                      }`}>
+                                        {rec.title}
+                                      </h3>
+                                      
+                                      {rec.description && (
+                                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                                          {rec.description}
+                                        </p>
+                                      )}
+                                      
+                                      <div className="flex flex-wrap gap-4 text-xs text-gray-500">
+                                        <div className="flex items-center gap-1.5">
+                                          <Clock className="w-3.5 h-3.5" />
+                                          <span>{rec.duration} minutes</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                          <Calendar className="w-3.5 h-3.5" />
+                                          <span>{new Date(rec.createdAt).toLocaleDateString()}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className={`p-2 rounded-lg transition-colors ${
+                                    isExpanded ? 'bg-indigo-100' : 'bg-gray-200'
+                                  }`}>
+                                    {isExpanded ? (
+                                      <ChevronUp className="w-5 h-5 text-indigo-600" />
+                                    ) : (
+                                      <ChevronDown className="w-5 h-5 text-gray-600" />
+                                    )}
+                                  </div>
+                                </div>
+                              </button>
+
+                              {isExpanded && (
+                                <div className="border-t border-gray-200 bg-black">
+                                  <div className="aspect-video w-full">
+                                    {hasError ? (
+                                      <div className="w-full h-full flex flex-col items-center justify-center text-center p-8 bg-gray-900">
+                                        <AlertCircle className="w-16 h-16 text-red-500 mb-4" />
+                                        <h3 className="text-white text-xl font-bold mb-2">Unable to load video</h3>
+                                        <p className="text-gray-400 mb-4">The video file could not be loaded. Please check the URL or try again later.</p>
+                                        <a
+                                          href={rec.videoUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                                        >
+                                          Open in New Tab
+                                          <ExternalLink className="w-4 h-4" />
+                                        </a>
+                                      </div>
+                                    ) : videoSource?.type === 'direct' ? (
+                                      <video
+                                        src={videoSource.url}
+                                        controls
+                                        className="w-full h-full"
+                                        onError={() => handleVideoError(rec._id)}
+                                        controlsList="nodownload"
+                                      >
+                                        Your browser does not support the video tag.
+                                      </video>
+                                    ) : (
+                                      <iframe
+                                        src={videoSource?.url}
+                                        className="w-full h-full"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowFullScreen
+                                        title={rec.title}
+                                        onError={() => handleVideoError(rec._id)}
+                                      ></iframe>
+                                    )}
+                                  </div>
+                                  
+                                  <div className="bg-gray-900 p-4">
+                                    <a
+                                      href={rec.videoUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-2 text-indigo-400 hover:text-indigo-300 transition-colors text-sm"
+                                    >
+                                      Open Original Link
+                                      <ExternalLink className="w-4 h-4" />
+                                    </a>
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                            
-                            <h3 className="font-bold text-gray-800 mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2">
-                              {rec.title}
-                            </h3>
-                            
-                            {rec.description && (
-                              <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                                {rec.description}
-                              </p>
-                            )}
-                            
-                            <div className="flex flex-col gap-2 text-xs text-gray-500">
-                              <div className="flex items-center gap-1.5">
-                                <Clock className="w-3.5 h-3.5" />
-                                <span>{rec.duration} minutes</span>
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                <Calendar className="w-3.5 h-3.5" />
-                                <span>{new Date(rec.createdAt).toLocaleDateString()}</span>
-                              </div>
-                            </div>
-                            
-                            <div className="mt-4 pt-3 border-t border-gray-200">
-                              <span className="text-sm font-semibold text-indigo-600 group-hover:text-indigo-700">
-                                Watch Now →
-                              </span>
-                            </div>
-                          </button>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -260,112 +319,6 @@ const StudentSeeRecordedClasses = () => {
           </div>
         )}
       </div>
-
-      {/* Video Player Modal */}
-      {selectedVideo && videoSource && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 p-4">
-          <div className={`bg-gray-900 rounded-xl overflow-hidden shadow-2xl transition-all duration-300 ${
-            isFullscreen ? 'w-full h-full' : 'w-full max-w-5xl'
-          }`}>
-            {/* Modal Header */}
-            <div className="bg-gray-800 p-4 flex items-center justify-between">
-              <div className="flex-1 mr-4">
-                <h3 className="text-white font-bold text-lg line-clamp-1">
-                  {selectedVideo.title}
-                </h3>
-                {selectedVideo.description && (
-                  <p className="text-gray-400 text-sm line-clamp-1 mt-1">
-                    {selectedVideo.description}
-                  </p>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={toggleFullscreen}
-                  className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
-                  title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-                >
-                  {isFullscreen ? (
-                    <Minimize2 className="w-5 h-5 text-white" />
-                  ) : (
-                    <Maximize2 className="w-5 h-5 text-white" />
-                  )}
-                </button>
-                <button
-                  onClick={closeVideoPlayer}
-                  className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
-                  title="Close"
-                >
-                  <X className="w-5 h-5 text-white" />
-                </button>
-              </div>
-            </div>
-
-            {/* Video Player */}
-            <div className={`bg-black ${isFullscreen ? 'h-[calc(100%-80px)]' : 'aspect-video'}`}>
-              {videoError ? (
-                <div className="w-full h-full flex flex-col items-center justify-center text-center p-8">
-                  <AlertCircle className="w-16 h-16 text-red-500 mb-4" />
-                  <h3 className="text-white text-xl font-bold mb-2">Unable to load video</h3>
-                  <p className="text-gray-400 mb-4">The video file could not be loaded. Please check the URL or try again later.</p>
-                  <a
-                    href={selectedVideo.videoUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                  >
-                    Open in New Tab
-                  </a>
-                </div>
-              ) : videoSource.type === 'direct' ? (
-                <video
-                  src={videoSource.url}
-                  controls
-                  autoPlay
-                  className="w-full h-full"
-                  onError={handleVideoError}
-                  controlsList="nodownload"
-                >
-                  Your browser does not support the video tag.
-                </video>
-              ) : (
-                <iframe
-                  src={videoSource.url}
-                  className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  title={selectedVideo.title}
-                  onError={handleVideoError}
-                ></iframe>
-              )}
-            </div>
-
-            {/* Video Info */}
-            {!isFullscreen && (
-              <div className="bg-gray-800 p-4">
-                <div className="flex items-center gap-6 text-sm text-gray-400">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    <span>{selectedVideo.duration} minutes</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    <span>{new Date(selectedVideo.createdAt).toLocaleDateString()}</span>
-                  </div>
-                  <a
-                    href={selectedVideo.videoUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="ml-auto text-indigo-400 hover:text-indigo-300 transition-colors text-sm"
-                  >
-                    Open Original Link →
-                  </a>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

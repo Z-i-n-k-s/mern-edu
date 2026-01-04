@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useSelector } from "react-redux";
 import SummaryApi from "../common";
 import { toast } from "react-toastify";
@@ -27,12 +27,12 @@ import {
   CartesianGrid,
 } from "recharts";
 
-// Import the certificate image
-import certificateImage from "../assest/certificate.png";
+import Certificate from "../components/Certificate";
 
 const StudentQuizMarks = () => {
   const user = useSelector((state) => state?.user?.user);
   const studentId = user?._id || user?.id;
+  const studentName = user?.name || user?.username || "Student";
 
   const [courses, setCourses] = useState([]);
   const [quizzesByCourse, setQuizzesByCourse] = useState({});
@@ -46,9 +46,11 @@ const StudentQuizMarks = () => {
   const [score, setScore] = useState(0);
 
   // View state
-  const [viewMode, setViewMode] = useState("overview"); // 'overview' or 'take-quiz'
+  const [viewMode, setViewMode] = useState("overview");
   const [showCertificatePreview, setShowCertificatePreview] = useState(false);
   const [previewCourseName, setPreviewCourseName] = useState("");
+  
+  const certificateRef = useRef(null);
 
   /* ================= FETCH COURSES ================= */
   useEffect(() => {
@@ -214,16 +216,27 @@ const StudentQuizMarks = () => {
 
   const handleDownloadCertificate = async () => {
     try {
-      const response = await fetch(certificateImage);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
+      // Get the SVG element
+      const svgElement = certificateRef.current?.querySelector('svg');
+      if (!svgElement) {
+        toast.error("Certificate not found");
+        return;
+      }
+
+      // Serialize SVG to string
+      const svgData = new XMLSerializer().serializeToString(svgElement);
+      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+      
+      // Create download link
+      const url = URL.createObjectURL(svgBlob);
+      const link = document.createElement('a');
       link.href = url;
-      link.download = `${previewCourseName || "certificate"}_completion.png`;
+      link.download = `${previewCourseName.replace(/\s+/g, '_')}_certificate.svg`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      URL.revokeObjectURL(url);
+      
       toast.success("Certificate downloaded successfully!");
     } catch (error) {
       console.error("Download failed:", error);
@@ -397,11 +410,17 @@ const StudentQuizMarks = () => {
             </button>
           </div>
           <div className="p-6">
-            <img 
-              src={certificateImage}
-              alt="Certificate" 
-              className="w-full rounded-lg shadow-lg"
-            />
+            <div ref={certificateRef} className="w-full rounded-lg shadow-lg overflow-hidden bg-white">
+              <Certificate 
+                studentName={studentName}
+                courseName={previewCourseName}
+                date={new Date().toLocaleDateString('en-US', { 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              />
+            </div>
             <div className="mt-6 flex gap-3 justify-end">
               {isCourseComplete(courses.find(c => (c.Course_Name || c.courseName) === previewCourseName)?._id) && (
                 <button
@@ -544,12 +563,12 @@ const StudentQuizMarks = () => {
                             <button
                               onClick={() => {
                                 setPreviewCourseName(course.Course_Name || course.courseName);
-                                handleDownloadCertificate();
+                                setShowCertificatePreview(true);
                               }}
                               className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-all shadow-md hover:shadow-lg flex items-center gap-2"
                             >
-                              <Download className="w-4 h-4" />
-                              Download
+                              <Award className="w-4 h-4" />
+                              Certificate
                             </button>
                           )}
                         </div>
@@ -674,7 +693,6 @@ const StudentQuizMarks = () => {
     </div>
   );
 };
-
 /* ================= HELPER COMPONENTS ================= */
 const StatCard = ({ icon, title, value, color }) => {
   const colorClasses = {
