@@ -29,6 +29,7 @@ import StudentExploreUniversities from "../pages/StudentExplorUniversities";
 import TeacherSeeReview from "../pages/TeacherSeeReview";
 import TeacherPostRecordClass from "../pages/TeacherPostRecordClass";
 import StudentSeeRecordedClasses from "../pages/StudentSeeRecordedClasses";
+import Admin2 from "../pages/Admin2";
 
 // Redirect root
 const RootRedirect = () => {
@@ -224,6 +225,14 @@ const router = createBrowserRouter([
             element: (
               <ProtectedRoute role={ROLE.ADMIN}>
                 <AllUsers />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "all",
+            element: (
+              <ProtectedRoute role={ROLE.ADMIN}>
+                <Admin2 />
               </ProtectedRoute>
             ),
           },

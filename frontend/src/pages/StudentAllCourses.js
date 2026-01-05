@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { Search, Filter, X, DollarSign, BookOpen, Clock, Award, ChevronDown } from "lucide-react";
 import SummaryApi from "../common";
+import StudentEnrollCourse from "../components/StudentEnrollCourse";
 
 
 const StudentAllCourses = () => {
@@ -142,6 +143,13 @@ const StudentAllCourses = () => {
     setShowDetailsModal(true);
   };
 
+  const handleEnrollClose = () => {
+    setShowEnrollModal(false);
+    setSelectedCourse(null);
+    // Refresh courses to update enrollment status
+    fetchCourses();
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -228,7 +236,7 @@ const StudentAllCourses = () => {
                   <select
                     value={selectedInstructor}
                     onChange={(e) => setSelectedInstructor(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="">All Instructors</option>
                     {instructors.map(instructor => (
@@ -245,7 +253,7 @@ const StudentAllCourses = () => {
                   <select
                     value={creditFilter}
                     onChange={(e) => setCreditFilter(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="">All Credits</option>
                     {credits.map(credit => (
@@ -270,7 +278,7 @@ const StudentAllCourses = () => {
                       placeholder="Max"
                       value={priceRange.max}
                       onChange={(e) => setPriceRange({ ...priceRange, max: e.target.value })}
-                      className="w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                      className="w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
                 </div>
@@ -292,7 +300,7 @@ const StudentAllCourses = () => {
                     type="checkbox"
                     checked={enrolledOnly}
                     onChange={(e) => setEnrolledOnly(e.target.checked)}
-                    className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <span className="text-sm text-gray-700">My Enrolled Courses</span>
                 </label>
@@ -415,34 +423,12 @@ const StudentAllCourses = () => {
           </div>
         )}
 
-        {/* Enroll Modal - Replace with your StudentEnrollCourse component */}
+        {/* Enroll Modal - Using StudentEnrollCourse Component */}
         {showEnrollModal && selectedCourse && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-md w-full p-6">
-              <h3 className="text-xl font-bold mb-4">Enroll in Course</h3>
-              <p className="text-gray-600 mb-6">
-                You are enrolling in <span className="font-semibold">{selectedCourse.Course_Name}</span>
-              </p>
-              {/* Replace this with: <StudentEnrollCourse course={selectedCourse} onClose={() => setShowEnrollModal(false)} /> */}
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowEnrollModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    // Your enrollment logic here
-                    setShowEnrollModal(false);
-                  }}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Confirm Enrollment
-                </button>
-              </div>
-            </div>
-          </div>
+          <StudentEnrollCourse 
+            course={selectedCourse} 
+            onClose={handleEnrollClose} 
+          />
         )}
 
         {/* Details Modal */}

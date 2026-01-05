@@ -1,9 +1,6 @@
 import React, { useEffect } from "react";
 import { useSelector } from "react-redux";
-import {
-  FaUserCircle,
-  FaUsers,
-} from "react-icons/fa";
+import { FaUserCircle, FaUsers } from "react-icons/fa";
 
 import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import ROLE from "../common/role";
@@ -19,7 +16,10 @@ const Adminpanel = () => {
     }
   }, [user, navigate]);
 
-  const navItems = [{ name: "All Users", icon: <FaUsers />, path: "all-users" }];
+  const navItems = [
+    { name: "All Users", icon: <FaUsers />, path: "all-users" },
+    { name: "All Users", icon: <FaUsers />, path: "all" },
+  ];
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
